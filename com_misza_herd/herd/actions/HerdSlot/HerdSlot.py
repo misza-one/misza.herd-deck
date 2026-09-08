@@ -17,7 +17,6 @@ from src.backend.PluginManager.InputBases import KeyAction
 from ...render import breath_step, render_agent, render_empty
 
 ATTACH_HELPERS = [
-    os.path.expanduser("~/.config/omarchy/plugins/misza.omaherd/omaherd-attach"),
     os.path.expanduser("~/.config/omarchy/plugins/io.github.salemsayed.omaherd/omaherd-attach"),
 ]
 

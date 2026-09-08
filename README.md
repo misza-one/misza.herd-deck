@@ -1,6 +1,6 @@
 # Misza Herd Deck
 
-StreamController plugin that mirrors [Misza Omaherd](https://github.com/misza-one/misza.omaherd)
+StreamController plugin that mirrors [Omaherd](https://github.com/salemsayed/omaherd)
 onto an Elgato Stream Deck. Same agents, same order, same attention states.
 
 Each key is one herd slot: status band on top (`MAIN DONE`, `WAIT`, `RUN`),
@@ -8,7 +8,12 @@ project name in the agent-kind color, empty slots stay dark. Press a key to
 focus that agent, like Enter in Omaherd.
 
 Requires [StreamController](https://github.com/StreamController/StreamController)
-and an enabled `misza.omaherd` widget (it reads `omarchy-shell misza.omaherd status`).
+and the Omaherd bar widget (`io.github.salemsayed.omaherd`). The deck reads
+`omarchy-shell io.github.salemsayed.omaherd status`.
+
+```bash
+omarchy plugin add https://github.com/salemsayed/omaherd.git --enable
+```
 
 ## Install
 

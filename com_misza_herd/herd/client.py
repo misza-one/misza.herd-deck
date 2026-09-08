@@ -1,6 +1,6 @@
 """Mirror Omaherd's live inbox onto StreamController.
 
-Polls `omarchy-shell misza.omaherd status` so remote hosts (and the same
+Polls `omarchy-shell io.github.salemsayed.omaherd status` so remote hosts (and the same
 sort/filter the bar uses) stay in lockstep. Falls back to omaherd-status.py
 only when the widget IPC is down. Actions render on GTK's main loop.
 """
@@ -16,9 +16,8 @@ import weakref
 from dataclasses import dataclass, field
 
 
-STATUS_CMD = ["omarchy-shell", "misza.omaherd", "status"]
+STATUS_CMD = ["omarchy-shell", "io.github.salemsayed.omaherd", "status"]
 STATUS_HELPERS = [
-    os.path.expanduser("~/.config/omarchy/plugins/misza.omaherd/omaherd-status.py"),
     os.path.expanduser("~/.config/omarchy/plugins/io.github.salemsayed.omaherd/omaherd-status.py"),
 ]
 
