@@ -1,0 +1,16 @@
+{
+    "version": "0.1.0",
+    "id": "com_misza_herd",
+    "name": "Misza Herd",
+    "app-version": "1.5.0",
+    "author": "misza",
+    "github": "https://github.com/misza-one/streamcontroller-herd",
+    "descriptions": {
+        "en_US": "Show live HerdR agents on StreamController keys, mirroring Omaherd attention states. Press a key to jump to the agent."
+    },
+    "short-descriptions": {
+        "en_US": "Live HerdR agent slots."
+    },
+    "tags": ["herdr", "agents", "omarchy"],
+    "minimum-app-version": "1.5.0b1"
+}
