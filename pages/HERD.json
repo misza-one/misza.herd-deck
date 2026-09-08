@@ -1,0 +1,19 @@
+{
+    "keys": {
+        "0x0": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 0}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "1x0": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 1}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "2x0": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 2}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "3x0": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 3}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "4x0": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 4}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "0x1": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 5}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "1x1": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 6}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "2x1": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 7}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "3x1": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 8}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "4x1": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 9}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "0x2": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 10}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "1x2": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 11}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "2x2": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 12}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "3x2": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 13}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}},
+        "4x2": {"states": {"0": {"actions": [{"id": "com_misza_herd::HerdSlot", "settings": {"slot": 14}}], "image-control-action": 0, "label-control-actions": [0, 0, 0], "background-control-action": 0}}}
+    }
+}
