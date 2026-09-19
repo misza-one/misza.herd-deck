@@ -5,7 +5,7 @@ onto an Elgato Stream Deck. Same agents, same order, same attention states.
 
 Each key is one herd slot: status band on top (`MAIN DONE`, `WAIT`, `RUN`),
 project name in the agent-kind color, empty slots stay dark. Press a key to
-focus that agent, like Enter in Omaherd.
+focus that agent in an existing HerdR client, or open a full client on its pane.
 
 Requires [StreamController](https://github.com/StreamController/StreamController)
 and the Omaherd bar widget (`io.github.salemsayed.omaherd`). The deck reads
@@ -70,9 +70,9 @@ Configure the deck (after the plugin is loaded):
    streamcontroller --change-page SERIAL_NUMBER HERD
    Only do this if the user wants the herd on the hardware now. If they already
    use another page, leave the active page alone and tell them HERD is in the page list.
-7. Verify Omaherd IPC: omarchy-shell io.github.salemsayed.omaherd status
+7. Verify Omaherd IPC: `omarchy-shell io.github.salemsayed.omaherd status`.
    Keys should show the same agents (blocked/done/working/idle). Empty slots stay dark.
-   Key press focuses the agent via omaherd-attach (same as Enter in Omaherd).
+   A key press focuses the agent in an existing HerdR client, or opens a full client on its pane.
 
 Do not fork Omaherd. The deck only consumes its status IPC.
 ```

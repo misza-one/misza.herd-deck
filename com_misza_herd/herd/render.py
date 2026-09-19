@@ -18,7 +18,7 @@ KIND_COLORS = {
     "devin": (251, 191, 36),
     "agy": (236, 72, 153),
     "cline": (45, 212, 191),
-    "omp": (148, 163, 184),
+    "omp": (248, 79, 204),
     "mastracode": (251, 113, 133),
     "opencode": (59, 130, 246),
     "copilot": (192, 132, 252),
@@ -45,6 +45,7 @@ FONTS = [
     "/usr/share/fonts/noto/NotoSans-Bold.ttf",
     "/usr/share/fonts/liberation/LiberationSans-Bold.ttf",
 ]
+BRANCH_SCROLL_PX_SEC = 34
 
 
 def breath(now: float) -> float:
@@ -108,11 +109,32 @@ def _outlined(draw, xy, text, font, fill, outline, width=3):
     draw.text((x, y), text, font=font, fill=fill)
 
 
+def _draw_branch(draw: ImageDraw.ImageDraw, branch: str, now: float, y: int, rgb, ink, halo) -> int:
+    text = " ".join(str(branch or "").split())
+    if not text:
+        return y
+    font = _font(26)
+    box = draw.textbbox((0, 0), text, font=font)
+    width = box[2] - box[0]
+    height = box[3] - box[1]
+    color = _mix(rgb, ink, 0.12)
+    if width <= SIZE - 12:
+        x = (SIZE - width) // 2
+        _outlined(draw, (x, y), text, font, color + (255,), halo + (255,), 3)
+        return y + height + 8
+    gap = 30
+    span = width + gap
+    x = 6 - int((now * BRANCH_SCROLL_PX_SEC) % span)
+    while x < SIZE - 6:
+        _outlined(draw, (x, y), text, font, color + (255,), halo + (255,), 3)
+        x += span
+    return y + height + 8
+
 def render_empty() -> Image.Image:
     return Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 255))
 
 
-def render_agent(workspace: str, kind: str, status: str, host: str, now: float) -> Image.Image:
+def render_agent(workspace: str, kind: str, status: str, host: str, now: float, branch: str = "") -> Image.Image:
     image = Image.new("RGBA", (SIZE, SIZE), (8, 9, 12, 255))
     draw = ImageDraw.Draw(image)
     rgb = _kind_rgb(kind)
@@ -129,13 +151,7 @@ def render_agent(workspace: str, kind: str, status: str, host: str, now: float) 
     }.get(status, (10, 11, 14))
     draw.rectangle((0, 0, SIZE, SIZE), fill=wash + (255,))
 
-    bar = STATUS_BAR.get(status, STATUS_BAR["idle"])
-    if status == "blocked":
-        bar = _mix((140, 28, 28), (255, 88, 88), pulse)
-    elif status == "done":
-        bar = _mix((160, 130, 24), (255, 220, 80), pulse)
-    elif status == "working":
-        bar = _mix((50, 58, 70), (140, 150, 165), pulse)
+    bar = rgb
     header = 40 if loud else 36 if status == "working" else 32
     draw.rectangle((0, 0, SIZE, header), fill=bar + (255,))
     if status in ("working", "blocked", "done"):
@@ -172,13 +188,19 @@ def render_agent(workspace: str, kind: str, status: str, host: str, now: float) 
         project_color = _mix(project_color, (20, 20, 20), 0.45)
 
     lines = _project_lines(workspace)
-    font, _ = _fit(draw, lines, SIZE - 14, start=34)
-    line_h = font.size + 2
-    block_h = line_h * len(lines)
-    y = header + max(4, (SIZE - header - block_h) // 2)
+    font, _ = _fit(draw, lines, SIZE - 14, start=26)
+    line_h = font.size + 1
+    if branch:
+        branch_bottom = _draw_branch(draw, branch, now, header + 9, rgb, ink, halo)
+        available = max(1, SIZE - branch_bottom - 4)
+        block_h = line_h * len(lines)
+        y = branch_bottom + max(0, (available - block_h) // 2)
+    else:
+        block_h = line_h * len(lines)
+        y = header + max(4, (SIZE - header - block_h) // 2)
     for line in lines:
         box = draw.textbbox((0, 0), line, font=font)
         x = (SIZE - (box[2] - box[0])) // 2
-        _outlined(draw, (x, y), line, font, project_color + (255,), halo + (255,), 3)
+        _outlined(draw, (x, y), line, font, project_color + (255,), halo + (255,), 2)
         y += line_h
     return image

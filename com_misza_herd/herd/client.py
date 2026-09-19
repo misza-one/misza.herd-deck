@@ -10,8 +10,10 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import shlex
 import subprocess
 import threading
+import time
 import weakref
 from dataclasses import dataclass, field
 
@@ -22,8 +24,10 @@ STATUS_HELPERS = [
 ]
 
 REFRESH_SEC = 2.0
-STATE_RANK = {"blocked": 0, "done": 1, "working": 2, "unknown": 3, "idle": 4}
-
+BRANCH_TTL_SEC = 30.0
+BRANCH_TIMEOUT_SEC = 3.0
+MAX_BRANCH_CHARS = 48
+_BRANCH_CACHE: dict[tuple[str, str], tuple[float, str]] = {}
 
 @dataclass(frozen=True)
 class HerdAgent:
@@ -37,7 +41,7 @@ class HerdAgent:
     key: str = ""
     workspace_number: int = 0
     tab_number: int = 0
-
+    branch: str = ""
 
 @dataclass
 class HerdSnapshot:
@@ -52,17 +56,65 @@ def _finite(value) -> int:
         return 0
     return number
 
+def _clean_branch(value) -> str:
+    text = " ".join(str(value or "").split())
+    if text in ("", "HEAD"):
+        return ""
+    return text[:MAX_BRANCH_CHARS]
 
-def _rank(agent: HerdAgent) -> tuple:
-    return (
-        STATE_RANK.get(agent.status, 3),
-        0 if agent.host == "local" else 1,
-        agent.host,
-        agent.workspace_number,
-        agent.tab_number,
-        agent.session,
-        agent.key or agent.pane_id,
+
+def _local_branch(cwd: str) -> str:
+    if not cwd or not os.path.isabs(cwd) or shutil.which("git") is None:
+        return ""
+    commands = [
+        ["git", "-C", cwd, "symbolic-ref", "--quiet", "--short", "HEAD"],
+        ["git", "-C", cwd, "rev-parse", "--short", "HEAD"],
+    ]
+    for command in commands:
+        try:
+            result = subprocess.run(
+                command, capture_output=True, text=True, timeout=BRANCH_TIMEOUT_SEC,
+            )
+        except Exception:
+            return ""
+        branch = _clean_branch(result.stdout)
+        if result.returncode == 0 and branch:
+            return branch
+    return ""
+
+
+def _remote_branch(host: str, cwd: str) -> str:
+    if not host or not cwd or not os.path.isabs(cwd):
+        return ""
+    quoted = shlex.quote(cwd)
+    script = (
+        f"git -C {quoted} symbolic-ref --quiet --short HEAD "
+        f"|| git -C {quoted} rev-parse --short HEAD"
     )
+    try:
+        result = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=2", "--", host, script],
+            capture_output=True, text=True, timeout=BRANCH_TIMEOUT_SEC,
+        )
+    except Exception:
+        return ""
+    return _clean_branch(result.stdout) if result.returncode == 0 else ""
+
+
+def _branch_for(host: str, cwd: str, entry: dict) -> str:
+    reported = _clean_branch(entry.get("branch") or entry.get("gitBranch"))
+    if reported:
+        return reported
+    if not cwd:
+        return ""
+    key = (host or "local", cwd)
+    now = time.monotonic()
+    cached = _BRANCH_CACHE.get(key)
+    if cached is not None and cached[0] > now:
+        return cached[1]
+    branch = _local_branch(cwd) if key[0] == "local" else _remote_branch(key[0], cwd)
+    _BRANCH_CACHE[key] = (now + BRANCH_TTL_SEC, branch)
+    return branch
 
 
 def _parse_payload(raw: str) -> dict | None:
@@ -93,6 +145,8 @@ def _agents_from(data: dict) -> list[HerdAgent]:
             continue
         kind = str(entry.get("agent") or entry.get("displayAgent")
                    or entry.get("name") or "").lower()
+        cwd = str(entry.get("cwd") or "")
+        branch = _branch_for(str(entry.get("host") or "local"), cwd, entry)
         agents.append(HerdAgent(
             workspace=str(entry.get("workspaceLabel") or "Workspace"),
             kind=kind,
@@ -104,8 +158,8 @@ def _agents_from(data: dict) -> list[HerdAgent]:
             key=str(entry.get("key") or ""),
             workspace_number=_finite(entry.get("workspaceNumber")),
             tab_number=_finite(entry.get("tabNumber")),
+            branch=branch,
         ))
-    agents.sort(key=_rank)
     return agents
 
 
