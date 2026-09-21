@@ -1,12 +1,18 @@
 """Mirror Omaherd's live inbox onto StreamController.
 
-Polls `omarchy-shell io.github.salemsayed.omaherd status` so remote hosts (and the same
-sort/filter the bar uses) stay in lockstep. Falls back to omaherd-status.py
-only when the widget IPC is down. Actions render on GTK's main loop.
+Polls `omarchy-shell io.github.salemsayed.omaherd status` so remote hosts stay
+in lockstep. Falls back to omaherd-status.py only when the widget IPC is down.
+Actions render on GTK's main loop.
+
+Unlike the bar (which re-sorts attention states first), the deck keeps slots in
+a stable identity order and debounces loud (blocked/done) washes: HerdR reports
+brief done/idle blips between an agent's own steps, and showing every poll raw
+would flash whole keys yellow/red and shuffle every slot on each blip.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import shutil
@@ -24,6 +30,15 @@ STATUS_HELPERS = [
 ]
 
 REFRESH_SEC = 2.0
+# HerdR reports brief done/idle blips between an agent's own steps. Showing
+# every poll raw would flash whole keys yellow/red and shuffle every positional
+# slot whenever any agent anywhere changes state, so loud (blocked/done)
+# washes need repeated polls to engage/disengage while working/idle apply at
+# once (same dark family, no flash).
+LOUD_STATES = frozenset({"blocked", "done"})
+ENTER_LOUD_POLLS = 2
+EXIT_LOUD_POLLS = 2
+STALE_KEY_SEC = 120.0
 BRANCH_TTL_SEC = 30.0
 BRANCH_TIMEOUT_SEC = 3.0
 MAX_BRANCH_CHARS = 48
@@ -166,6 +181,9 @@ def _agents_from(data: dict) -> list[HerdAgent]:
 class HerdClient:
     def __init__(self) -> None:
         self.snapshot = HerdSnapshot()
+        self._display_status: dict[str, str] = {}
+        self._pending: dict[str, list] = {}
+        self._seen: dict[str, float] = {}
         self._subscribers = weakref.WeakSet()
         self._stop = threading.Event()
         self._helper = next((p for p in STATUS_HELPERS if os.path.isfile(p)), None)
@@ -199,8 +217,60 @@ class HerdClient:
     def _poll(self) -> HerdSnapshot:
         data = self._from_omaherd() or self._from_helper()
         if data is None:
-            return HerdSnapshot(agents=[], ok=False)
-        return HerdSnapshot(agents=_agents_from(data), ok=True)
+            # IPC/helper hiccup: keep the last good herd instead of blanking
+            # every key to black for a single poll.
+            return HerdSnapshot(agents=list(self.snapshot.agents), ok=False)
+        return HerdSnapshot(agents=self._stabilize(_agents_from(data)), ok=True)
+
+    @staticmethod
+    def _identity(agent: HerdAgent) -> str:
+        return agent.key or f"{agent.host}|{agent.session}|{agent.pane_id}"
+
+    def _stabilize(self, agents: list[HerdAgent]) -> list[HerdAgent]:
+        """Debounce loud states and return agents in a stable slot order."""
+        now = time.monotonic()
+        for agent in agents:
+            key = self._identity(agent)
+            confirmed = self._display_status.get(key)
+            if confirmed is None or confirmed == agent.status:
+                self._display_status[key] = agent.status
+                self._pending.pop(key, None)
+            else:
+                entering = agent.status in LOUD_STATES and confirmed not in LOUD_STATES
+                leaving = confirmed in LOUD_STATES and agent.status not in LOUD_STATES
+                if entering or leaving:
+                    needed = ENTER_LOUD_POLLS if entering else EXIT_LOUD_POLLS
+                    candidate, hits = self._pending.get(key, (None, 0))
+                    if candidate != agent.status:
+                        self._pending[key] = [agent.status, 1]
+                    elif hits + 1 >= needed:
+                        self._display_status[key] = agent.status
+                        self._pending.pop(key, None)
+                    else:
+                        self._pending[key] = [candidate, hits + 1]
+                else:
+                    # working <-> idle <-> unknown stay in the dark family.
+                    self._display_status[key] = agent.status
+                    self._pending.pop(key, None)
+            self._seen[key] = now
+        self._prune(now)
+        stable = [
+            dataclasses.replace(agent, status=self._display_status.get(
+                self._identity(agent), agent.status,
+            ))
+            for agent in agents
+        ]
+        stable.sort(key=lambda item: (
+            item.host, item.session, item.workspace_number, item.tab_number, item.pane_id,
+        ))
+        return stable
+
+    def _prune(self, now: float) -> None:
+        stale = [key for key, seen in self._seen.items() if now - seen > STALE_KEY_SEC]
+        for key in stale:
+            self._seen.pop(key, None)
+            self._display_status.pop(key, None)
+            self._pending.pop(key, None)
 
     def _from_omaherd(self) -> dict | None:
         if shutil.which(STATUS_CMD[0]) is None:

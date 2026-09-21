@@ -288,7 +288,7 @@ class HerdSlotAction(KeyAction):
     def get_config_rows(self):
         row = Adw.SpinRow.new_with_range(0, 14, 1)
         row.set_title("Herd slot")
-        row.set_subtitle("0 follows Omaherd order")
+        row.set_subtitle("Fixed slot order; colors follow Omaherd")
         settings = self.get_settings()
         row.set_value(float(self.slot()))
         if "slot" not in settings:

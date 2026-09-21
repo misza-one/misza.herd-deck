@@ -1,10 +1,13 @@
 # Misza Herd Deck
 
 StreamController plugin that mirrors [Omaherd](https://github.com/salemsayed/omaherd)
-onto an Elgato Stream Deck. Same agents, same order, same attention states.
+onto an Elgato Stream Deck. Same agents, same attention states, stable slot order.
 
 Each key is one herd slot: status band on top (`MAIN DONE`, `WAIT`, `RUN`),
-project name in the agent-kind color, empty slots stay dark. Press a key to
+project name in the agent-kind color, empty slots stay dark. Slots keep a fixed
+identity order (the bar re-sorts attention first; the deck does not, so keys
+stop jumping), and brief `done`/`blocked` blips between an agent's own steps
+need a repeated poll before a key turns yellow/red. Press a key to
 focus that agent in an existing HerdR client, or open a full client on its pane.
 
 Requires [StreamController](https://github.com/StreamController/StreamController)
@@ -72,6 +75,8 @@ Configure the deck (after the plugin is loaded):
    use another page, leave the active page alone and tell them HERD is in the page list.
 7. Verify Omaherd IPC: `omarchy-shell io.github.salemsayed.omaherd status`.
    Keys should show the same agents (blocked/done/working/idle). Empty slots stay dark.
+   Slots keep a stable order (unlike the bar's attention-first sort), and yellow/red
+   appear ~4 s after the state holds (single-poll blips are ignored).
    A key press focuses the agent in an existing HerdR client, or opens a full client on its pane.
 
 Do not fork Omaherd. The deck only consumes its status IPC.
