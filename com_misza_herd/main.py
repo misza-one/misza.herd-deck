@@ -30,7 +30,7 @@ class MiszaHerdPlugin(PluginBase):
 
         self.register(
             plugin_name="Misza Herd",
-            github_repo="https://github.com/misza-one/streamcontroller-herd",
+            github_repo="https://github.com/misza-one/misza.herd-deck",
             plugin_version="0.1.0",
             app_version="1.5.0",
         )
