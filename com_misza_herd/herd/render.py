@@ -59,7 +59,7 @@ def breath_step(now: float) -> int:
     return int(round(breath(now) * 10))
 
 
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=16)
 def _font(size: int):
     for path in FONTS:
         if os.path.isfile(path):
@@ -101,12 +101,20 @@ def _luma(rgb) -> float:
 
 
 def _outlined(draw, xy, text, font, fill, outline, width=3):
-    x, y = xy
-    for dx in range(-width, width + 1):
-        for dy in range(-width, width + 1):
-            if dx or dy:
-                draw.text((x + dx, y + dy), text, font=font, fill=outline)
-    draw.text((x, y), text, font=font, fill=fill)
+    # Native stroke: one pass instead of (2w+1)^2 offset draws, which cost
+    # 25-120 ms per frame on GTK's main loop.
+    draw.text(xy, text, font=font, fill=fill, stroke_width=width, stroke_fill=outline)
+
+
+@lru_cache(maxsize=64)
+def branch_scrolls(branch: str) -> bool:
+    """True when the branch is wider than the key and has to marquee."""
+    text = " ".join(str(branch or "").split())
+    if not text:
+        return False
+    draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    box = draw.textbbox((0, 0), text, font=_font(26))
+    return box[2] - box[0] > SIZE - 12
 
 
 def _draw_branch(draw: ImageDraw.ImageDraw, branch: str, now: float, y: int, rgb, ink, halo) -> int:

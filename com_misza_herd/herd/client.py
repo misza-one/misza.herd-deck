@@ -186,12 +186,14 @@ class HerdClient:
         self._seen: dict[str, float] = {}
         self._subscribers = weakref.WeakSet()
         self._stop = threading.Event()
+        self._wake = threading.Event()
         self._helper = next((p for p in STATUS_HELPERS if os.path.isfile(p)), None)
         self._thread = threading.Thread(target=self._loop, name="MiszaHerdPoll", daemon=True)
         self._thread.start()
 
     def shutdown(self) -> None:
         self._stop.set()
+        self._wake.set()
 
     def subscribe(self, action) -> None:
         self._subscribers.add(action)
@@ -207,8 +209,16 @@ class HerdClient:
             if notify is not None:
                 notify(snapshot)
 
+    def request_refresh(self) -> None:
+        """Poll now on the background thread; GTK's main loop never blocks on it."""
+        self._wake.set()
+
     def _loop(self) -> None:
-        while not self._stop.wait(REFRESH_SEC):
+        while not self._stop.is_set():
+            self._wake.wait(REFRESH_SEC)
+            self._wake.clear()
+            if self._stop.is_set():
+                break
             try:
                 self.refresh_now()
             except Exception:

@@ -15,7 +15,7 @@ from gi.repository import Adw, GLib
 
 from src.backend.PluginManager.InputBases import KeyAction
 
-from ...render import breath_step, render_agent, render_empty
+from ...render import branch_scrolls, breath_step, render_agent, render_empty
 
 ATTACH_HELPERS = [
     os.path.expanduser("~/.config/omarchy/plugins/io.github.salemsayed.omaherd/omaherd-attach"),
@@ -184,7 +184,7 @@ class HerdSlotAction(KeyAction):
         self._client = self.plugin_base.get_herd_client()
         self._client.subscribe(self)
         self._paint(self._client.snapshot)
-        self._client.refresh_now()
+        self._client.request_refresh()
         self._ensure_timer()
 
     def on_update(self) -> None:
@@ -258,7 +258,7 @@ class HerdSlotAction(KeyAction):
 
     def _pulse(self) -> bool:
         agent = self._agent
-        if agent is not None and (agent.status in ("working", "blocked", "done") or agent.branch):
+        if agent is not None and (agent.status in ("working", "blocked", "done") or branch_scrolls(agent.branch)):
             self._paint(self._client.snapshot if self._client else None)
         return True
 
@@ -272,16 +272,20 @@ class HerdSlotAction(KeyAction):
         now = time.monotonic()
         if agent is None:
             key = ("empty",)
-            image = render_empty()
         else:
             motion = breath_step(now) if agent.status in ("working", "blocked", "done") else 8
-            branch_step = int(now * 4) if agent.branch else 0
+            branch_step = int(now * 4) if branch_scrolls(agent.branch) else 0
             key = (agent.workspace, agent.kind, agent.status, agent.host,
                    agent.pane_id, agent.branch, motion, branch_step)
-            image = render_agent(agent.workspace, agent.kind, agent.status, agent.host, now, branch=agent.branch)
+        # Check the key before rendering: _pulse runs every 90 ms per slot, but
+        # the frame only changes a few times a second.
         if key == self._last_key:
             return False
         self._last_key = key
+        if agent is None:
+            image = render_empty()
+        else:
+            image = render_agent(agent.workspace, agent.kind, agent.status, agent.host, now, branch=agent.branch)
         self.set_media(image=image, size=1.0, update=True)
         return False
 
